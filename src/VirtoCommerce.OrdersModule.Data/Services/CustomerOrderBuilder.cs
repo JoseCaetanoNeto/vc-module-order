@@ -58,7 +58,7 @@ namespace VirtoCommerce.OrdersModule.Data.Services
             if (cart.Items != null)
             {
                 retVal.Items = new List<LineItem>();
-                foreach (var cartLineItem in cart.Items)
+                foreach (var cartLineItem in cart.Items.Where(x => !x.IsRejected))
                 {
                     var orderLineItem = ToOrderModel(cartLineItem);
                     retVal.Items.Add(orderLineItem);
@@ -120,7 +120,7 @@ namespace VirtoCommerce.OrdersModule.Data.Services
                 retVal.DynamicProperties = cart.DynamicProperties.Select(ToOrderModel).ToList();
             }
 
-            //Save only disctinct addresses for order
+            //Save only distinct addresses for order
             retVal.Addresses = retVal.Addresses.Distinct().ToList();
             foreach (var address in retVal.Addresses)
             {
@@ -227,6 +227,12 @@ namespace VirtoCommerce.OrdersModule.Data.Services
             {
                 retVal.Discounts = shipment.Discounts.Select(ToOrderModel).ToList();
             }
+
+            if (shipment.DynamicProperties != null)
+            {
+                retVal.DynamicProperties = shipment.DynamicProperties.Select(ToOrderModel).ToList();
+            }
+
             retVal.TaxDetails = shipment.TaxDetails;
             return retVal;
         }
@@ -260,6 +266,10 @@ namespace VirtoCommerce.OrdersModule.Data.Services
             if (payment.BillingAddress != null)
             {
                 retVal.BillingAddress = ToOrderModel(payment.BillingAddress);
+            }
+            if (payment.DynamicProperties != null)
+            {
+                retVal.DynamicProperties = payment.DynamicProperties.Select(ToOrderModel).ToList();
             }
             retVal.TaxDetails = payment.TaxDetails;
             return retVal;

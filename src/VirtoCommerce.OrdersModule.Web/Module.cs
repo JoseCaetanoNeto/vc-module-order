@@ -16,6 +16,7 @@ using VirtoCommerce.OrdersModule.Core;
 using VirtoCommerce.OrdersModule.Core.Events;
 using VirtoCommerce.OrdersModule.Core.Extensions;
 using VirtoCommerce.OrdersModule.Core.Model;
+using VirtoCommerce.OrdersModule.Core.Model.Search;
 using VirtoCommerce.OrdersModule.Core.Notifications;
 using VirtoCommerce.OrdersModule.Core.Search.Indexed;
 using VirtoCommerce.OrdersModule.Core.Services;
@@ -32,6 +33,7 @@ using VirtoCommerce.Platform.Core.Bus;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.DynamicProperties;
 using VirtoCommerce.Platform.Core.ExportImport;
+using VirtoCommerce.Platform.Core.GenericCrud;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Platform.Core.Security;
 using VirtoCommerce.Platform.Core.Settings;
@@ -61,10 +63,13 @@ namespace VirtoCommerce.OrdersModule.Web
 
             serviceCollection.AddTransient<IOrderRepository, OrderRepository>();
             serviceCollection.AddTransient<Func<IOrderRepository>>(provider => () => provider.CreateScope().ServiceProvider.GetRequiredService<IOrderRepository>());
-            serviceCollection.AddTransient<ICustomerOrderSearchService, CustomerOrderSearchService>();
-            serviceCollection.AddTransient<ICustomerOrderService, CustomerOrderService>();
+            serviceCollection.AddTransient<ISearchService<CustomerOrderSearchCriteria, CustomerOrderSearchResult, CustomerOrder>, CustomerOrderSearchService>();
+            serviceCollection.AddTransient(x => (ICustomerOrderSearchService)x.GetRequiredService<ISearchService<CustomerOrderSearchCriteria, CustomerOrderSearchResult, CustomerOrder>>());
+            serviceCollection.AddTransient<ICrudService<CustomerOrder>, CustomerOrderService>();
+            serviceCollection.AddTransient(x => (ICustomerOrderService)x.GetRequiredService<ICrudService<CustomerOrder>>());
             serviceCollection.AddTransient<IPaymentSearchService, PaymentSearchService>();
             serviceCollection.AddTransient<IPaymentService, PaymentService>();
+            serviceCollection.AddTransient(x => (ICrudService<PaymentIn>)x.GetService<IPaymentService>());
             serviceCollection.AddTransient<ICustomerOrderBuilder, CustomerOrderBuilder>();
             serviceCollection.AddTransient<ICustomerOrderTotalsCalculator, DefaultCustomerOrderTotalsCalculator>();
             serviceCollection.AddTransient<OrderExportImport>();
@@ -146,7 +151,6 @@ namespace VirtoCommerce.OrdersModule.Web
                                                                         ModuleConstants.Security.Permissions.Update,
                                                                         ModuleConstants.Security.Permissions.Delete,
                                                                         }, new OnlyOrderResponsibleScope(), new OrderSelectedStoreScope());
-
 
             var inProcessBus = appBuilder.ApplicationServices.GetService<IHandlerRegistrar>();
             inProcessBus.RegisterHandler<OrderChangedEvent>((message, token) => appBuilder.ApplicationServices.GetService<AdjustInventoryOrderChangedEventHandler>().Handle(message));
